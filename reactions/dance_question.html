@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Question Reaction Module</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .question-box {
+            padding: 25px 40px;
+            background: rgba(20, 0, 35, 0.85);
+            color: #ffaa00;
+            border-radius: 15px;
+            font-size: 38px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            border: 3px solid #ff00aa;
+            box-shadow: 0 0 30px #ff00aa;
+            display: none;
+            text-align: center;
+            animation: popIn 0.3s ease-out forwards;
+        }
+
+        .username {
+            font-size: 20px;
+            color: #00ffff;
+            margin-top: 10px;
+            letter-spacing: 2px;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="question-box" id="q-box">
+        <div id="q-title">⚡ ACTION? ⚡</div>
+        <div class="username" id="u-name">@user</div>
+    </div>
+
+    <script>
+        const qBox = document.getElementById('q-box');
+        const qTitle = document.getElementById('q-title');
+        const uName = document.getElementById('u-name');
+
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (data && (data.action === 'play' || data === 'play')) {
+                const username = data.username || 'viewer';
+                const command = data.command || 'TRIGGER';
+
+                qTitle.textContent = `⚡ ${command.replace('!', '').toUpperCase()}? ⚡`;
+                uName.textContent = `@${username}`;
+                qBox.style.display = 'block';
+
+                setTimeout(() => {
+                    qBox.style.display = 'none';
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
