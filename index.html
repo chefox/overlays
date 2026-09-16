@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZX + VHS Localized Glitch Overlay</title>
+    <title>ZX Spectrum + VHS Strip Glitch Overlay</title>
     <style>
         * { box-sizing: border-box; }
         body, html {
@@ -36,92 +36,125 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Символы ZX Spectrum и 8-битная палитра
         const chars = '░▒▓█▄▀■▌▐0123456789ABCDEF!@#$%^&*()_+-=/?><~';
         const palette = [
-            '#000000', '#0000D8', '#D80000', '#D800D8', 
-            '#00D800', '#00D8D8', '#D8D800', '#FFFFFF', 
+            '#000000', '#0000D8', '#D80000', '#D800D8',
+            '#00D800', '#00D8D8', '#D8D800', '#FFFFFF',
             '#00FFFF', '#FF00FF', '#FFFF00'
         ];
 
         const CELL_SIZE = 16;
-        let clusters = [];
-
-        // Вспомогательная функция случайных чисел
-        function randomRange(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-
-        // Логика состояний: Пауза (10–60 сек) -> Серия глитчей (2–5 сек)
+        let activeClusters = [];
         let isGlitching = false;
-        let nextStateTime = Date.now() + randomRange(3000, 8000); // Первая пауза при старте чуть короче
 
-        function updateGlitchState() {
-            const now = Date.now();
-            if (now >= nextStateTime) {
-                isGlitching = !isGlitching;
-                if (isGlitching) {
-                    // Длительность вспышки глитча: от 2 до 5 секунд
-                    nextStateTime = now + randomRange(2000, 5000);
-                } else {
-                    // Длительность паузы: от 10 до 60 секунд (10000 - 60000 мс)
-                    nextStateTime = now + randomRange(10000, 60000);
-                    clusters = []; // Очищаем оставшиеся блоки
-                }
-            }
-        }
+        // --- УПРАВЛЕНИЕ ТАЙМЕРАМИ И ПАУЗАМИ ---
 
-        // Создание кластера глитча
-        function createCluster() {
-            const cols = Math.floor(canvas.width / CELL_SIZE);
-            const rows = Math.floor(canvas.height / CELL_SIZE);
-
-            const w = randomRange(2, 6);
-            const h = randomRange(1, 4);
-
-            const startX = randomRange(0, cols - w);
-            const startY = randomRange(0, rows - h);
-            const duration = randomRange(4, 12); // Время жизни кластера в кадрах
-
-            const paper = palette[Math.floor(Math.random() * palette.length)];
-            let ink = palette[Math.floor(Math.random() * palette.length)];
-            while (ink === paper) {
-                ink = palette[Math.floor(Math.random() * palette.length)];
-            }
-
-            clusters.push({
-                x: startX,
-                y: startY,
-                w: w,
-                h: h,
-                paper: paper,
-                ink: ink,
-                duration: duration,
-                age: 0,
-                offsetX: (Math.random() - 0.5) * 12
-            });
-        }
-
-        function render() {
-            updateGlitchState();
+        function scheduleNextGlitch() {
+            isGlitching = false;
+            activeClusters = [];
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (isGlitching) {
-                // Создаем новые глитчи только во время активной фазы
-                if (Math.random() < 0.35 && clusters.length < 4) {
-                    createCluster();
+            // Пауза от 10 до 60 секунд (10000 - 60000 мс)
+            const pauseDuration = Math.floor(Math.random() * 50000) + 10000;
+            setTimeout(startGlitchBurst, pauseDuration);
+        }
+
+        function startGlitchBurst() {
+            isGlitching = true;
+            generateClusters();
+
+            // Длительность глитча от 1 до 5 секунд (1000 - 5000 мс)
+            const burstDuration = Math.floor(Math.random() * 4000) + 1000;
+            setTimeout(scheduleNextGlitch, burstDuration);
+        }
+
+        // --- ГЕНЕРАЦИЯ ГЛИТЧ-ОБЛАСТЕЙ ---
+
+        function generateClusters() {
+            const cols = Math.floor(canvas.width / CELL_SIZE);
+            const rows = Math.floor(canvas.height / CELL_SIZE);
+            
+            // Создаем от 1 до 3 локальных пятен
+            const count = Math.floor(Math.random() * 3) + 1;
+            activeClusters = [];
+
+            for (let i = 0; i < count; i++) {
+                const w = Math.floor(Math.random() * 6) + 2;
+                const h = Math.floor(Math.random() * 3) + 1;
+                const startX = Math.floor(Math.random() * (cols - w));
+                const startY = Math.floor(Math.random() * (rows - h));
+
+                const paper = palette[Math.floor(Math.random() * palette.length)];
+                let ink = palette[Math.floor(Math.random() * palette.length)];
+                while (ink === paper) {
+                    ink = palette[Math.floor(Math.random() * palette.length)];
                 }
 
+                activeClusters.push({
+                    x: startX,
+                    y: startY,
+                    w: w,
+                    h: h,
+                    paper: paper,
+                    ink: ink
+                });
+            }
+        }
+
+        // --- ОТРИСОВКА VHS-ПОЛОС НА ЛИНИИ ГЛИТЧА ---
+
+        function drawVHSLines(cluster) {
+            const startY = cluster.y * CELL_SIZE;
+            const endY = (cluster.y + cluster.h) * CELL_SIZE;
+            const clusterX = cluster.x * CELL_SIZE;
+            const clusterW = cluster.w * CELL_SIZE;
+
+            // 3–6 мерцающих линий в пределах высоты глитч-блока
+            const numLines = Math.floor(Math.random() * 4) + 3;
+
+            for (let i = 0; i < numLines; i++) {
+                const lineY = startY + Math.random() * (endY - startY);
+                const lineHeight = Math.random() * 2 + 1;
+                
+                // Полосы сбиваются по длине (чуть шире самого глитч-блока)
+                const lineX = clusterX - Math.random() * 30;
+                const lineWidth = clusterW + Math.random() * 60;
+
+                // Цвета VHS-смещения (Cyan/Magenta/White)
+                const colors = [
+                    'rgba(0, 255, 255, 0.8)',
+                    'rgba(255, 0, 255, 0.8)',
+                    'rgba(255, 255, 255, 0.9)'
+                ];
+                ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+                ctx.fillRect(lineX, lineY, lineWidth, lineHeight);
+
+                // Белые быстрые нити срыва трекинга
+                if (Math.random() > 0.5) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                    ctx.fillRect(lineX - 20, lineY, lineWidth * 0.5, 1);
+                }
+            }
+        }
+
+        // --- ГЛАВНЫЙ ЦИКЛ РЕНДЕРА ---
+
+        function render() {
+            if (isGlitching) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.font = 'bold 14px "Courier New", monospace';
                 ctx.textBaseline = 'top';
 
-                for (let i = clusters.length - 1; i >= 0; i--) {
-                    const c = clusters[i];
+                // Периодически меняем положение блоков во время вспышки
+                if (Math.random() < 0.25) {
+                    generateClusters();
+                }
 
-                    // 1. Отрисовка ZX Spectrum блоков (знакомест)
+                activeClusters.forEach(c => {
+                    // 1.ZX Spectrum блоки
                     for (let r = 0; r < c.h; r++) {
                         for (let col = 0; col < c.w; col++) {
-                            const posX = (c.x + col) * CELL_SIZE + c.offsetX;
+                            const posX = (c.x + col) * CELL_SIZE;
                             const posY = (c.y + r) * CELL_SIZE;
 
                             ctx.fillStyle = c.paper;
@@ -133,52 +166,16 @@
                         }
                     }
 
-                    // 2. Отрисовка мерцающих VHS-полос срыва вдоль линии глитча
-                    const clusterY = c.y * CELL_SIZE;
-                    const clusterH = c.h * CELL_SIZE;
-                    const lineCount = randomRange(2, 5); // Количество полосок на глитч
-
-                    for (let l = 0; l < lineCount; l++) {
-                        // Полосы привязаны по Y к строке глитча с небольшим разлетом
-                        const vhsY = clusterY + Math.random() * clusterH;
-                        const vhsHeight = randomRange(1, 3); // Тонкие полоски (1-3px)
-                        
-                        // Длина полосы вылезает за пределы ZX-блока, имитируя срыв строки
-                        const extraWidth = randomRange(50, 250);
-                        const vhsX = (c.x * CELL_SIZE) - (Math.random() * 50);
-                        const vhsWidth = (c.w * CELL_SIZE) + extraWidth;
-
-                        // Цвета VHS-срыва (белый шумок или хроматический сдвиг Cyan/Magenta)
-                        const colors = [
-                            `rgba(255, 255, 255, ${Math.random() * 0.8 + 0.2})`,
-                            `rgba(0, 255, 255, ${Math.random() * 0.6 + 0.2})`,
-                            `rgba(255, 0, 255, ${Math.random() * 0.6 + 0.2})`
-                        ];
-                        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-                        ctx.fillRect(vhsX, vhsY, vhsWidth, vhsHeight);
-
-                        // Белые сбивающиеся точки-штрихи на линии
-                        if (Math.random() > 0.4) {
-                            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-                            ctx.fillRect(
-                                vhsX + Math.random() * vhsWidth, 
-                                vhsY, 
-                                randomRange(10, 40), 
-                                vhsHeight
-                            );
-                        }
-                    }
-
-                    c.age++;
-                    if (c.age >= c.duration) {
-                        clusters.splice(i, 1);
-                    }
-                }
+                    // 2. Мерцающие VHS-полоски, привязанные к строке глитча
+                    drawVHSLines(c);
+                });
             }
 
             requestAnimationFrame(render);
         }
 
+        // Запуск первого цикла с паузой при загрузке
+        scheduleNextGlitch();
         render();
     </script>
 </body>
