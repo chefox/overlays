@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IRL Chat Trigger Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        #animation-container {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            display: none;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffcc;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid #00ffcc;
+            box-shadow: 0 0 20px #00ffcc;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="animation-container">
+        ⚡ BOOM! ⚡
+    </div>
+
+    <script src="https://unpkg.com/tmi.js@<1.8.5/dist/tmi.min.js"></script>
+    <script>
+        const channelName = 'technogumanitarij';
+
+        const client = new tmi.Client({
+            channels: [ channelName ]
+        });
+
+        client.connect();
+
+        client.on('message', (channel, tags, message, self) => {
+            const text = message.trim().toLowerCase();
+
+            if (text === '!boom') {
+                triggerAnimation();
+            }
+        });
+
+        function triggerAnimation() {
+            const box = document.getElementById('animation-container');
+            box.style.display = 'block';
+
+            setTimeout(() => {
+                box.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
