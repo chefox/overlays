@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IRL Chat Trigger Overlay</title>
+    <title>IRL Chat Trigger Overlay (Native WS)</title>
     <style>
         body {
             margin: 0;
@@ -41,24 +41,45 @@
         ⚡ BOOM! ⚡
     </div>
 
-    <!-- Надежный CDN от jsDelivr -->
-    <script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/dist/tmi.min.js"></script>
     <script>
         const channelName = 'technogumanitarij';
 
-        const client = new tmi.Client({
-            channels: [ channelName ]
-        });
+        // Подключаемся напрямую к Twitch IRC через WebSocket
+        const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
-        client.connect();
+        ws.onopen = () => {
+            // Анонимная авторизация для чтения чата
+            ws.send('PASS SCHMOOPIE');
+            ws.send('NICK justinfan12345');
+            ws.send('JOIN #' + channelName.toLowerCase());
+            console.log('Подключено к чату Twitch!');
+        };
 
-        client.on('message', (channel, tags, message, self) => {
-            const text = message.trim().toLowerCase();
+        ws.onmessage = (event) => {
+            const data = event.data;
 
-            if (text === '!boom') {
-                triggerAnimation();
+            // Twitch требует отвечать PING на PONG, чтобы соединение не обрывалось
+            if (data.startsWith('PING')) {
+                ws.send('PONG ' + data.split(' ')[1]);
+                return;
             }
-        });
+
+            // Обработка сообщений чата (PRIVMSG)
+            if (data.includes('PRIVMSG')) {
+                // Извлекаем текст сообщения из сырой IRC-строки
+                const parts = data.split(':');
+                const message = parts.slice(2).join(':').trim().toLowerCase();
+
+                if (message === '!boom') {
+                    triggerAnimation();
+                }
+            }
+        };
+
+        ws.onclose = () => {
+            console.log('Соединение с чатом закрыто. Переподключение...');
+            setTimeout(() => location.reload(), 5000); // Автопереподключение при обрыве
+        };
 
         function triggerAnimation() {
             const box = document.getElementById('animation-container');
