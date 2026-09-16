@@ -16,21 +16,27 @@
             align-items: center;
         }
 
-        .dance-container {
+        .dance-box {
             position: relative;
+            padding: 30px 50px;
+            /* Solid dark background for high readability over any camera background */
+            background: rgba(10, 10, 20, 0.9);
+            color: #00ffcc;
             font-size: 52px;
             font-weight: bold;
             font-family: 'Courier New', Courier, monospace;
             text-transform: uppercase;
             letter-spacing: 6px;
             display: none;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            text-align: center;
+            border: 3px solid #00ffcc;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.5);
         }
     </style>
 </head>
 <body>
 
-    <div class="dance-container" id="dance-box"></div>
+    <div class="dance-box" id="dance-box">LET'S DANCE</div>
 
     <script>
         const box = document.getElementById('dance-box');
@@ -50,28 +56,46 @@
                 glitchInterval = setInterval(() => {
                     if (!active) return;
 
+                    // 1. Text glitch: keep primary text mostly stable for readability, mix German text occasionally
                     let output = "";
                     const maxLength = Math.max(primaryText.length, glitchText.length);
-
                     for (let i = 0; i < maxLength; i++) {
                         const charP = primaryText[i] || '';
                         const charG = glitchText[i] || '';
-
-                        // 75% chance to show readable primary text, 25% to glitch into German fragment
-                        if (Math.random() < 0.75) {
+                        
+                        if (Math.random() < 0.85) {
                             output += `<span style="color: #00ffcc;">${charP}</span>`;
                         } else {
-                            output += `<span style="color: #ff0055; text-shadow: 2px 0 #00ffff, -2px 0 #ff0055;">${charG}</span>`;
+                            output += `<span style="color: #ff0055; text-shadow: 1px 0 #00ffff;">${charG}</span>`;
                         }
                     }
                     box.innerHTML = output;
-                }, 60); // Speed of character flickering
+
+                    // 2. Border & Shape glitch (changing border-radius and outline dynamically)
+                    const rx1 = Math.floor(Math.random() * 20) + 2;
+                    const rx2 = Math.floor(Math.random() * 20) + 2;
+                    const rx3 = Math.floor(Math.random() * 20) + 2;
+                    const rx4 = Math.floor(Math.random() * 20) + 2;
+                    box.style.borderRadius = `${rx1}px ${rx2}px ${rx3}px ${rx4}px`;
+
+                    const borderWidth = Math.random() > 0.4 ? '3px' : '6px';
+                    const borderColor = Math.random() > 0.3 ? '#00ffcc' : '#ff0055';
+                    box.style.border = `${borderWidth} solid ${borderColor}`;
+                    box.style.boxShadow = `0 0 ${Math.floor(Math.random() * 35) + 10}px ${borderColor}`;
+
+                    // Slight jitter position effect
+                    const jitterX = (Math.random() - 0.5) * 8;
+                    const jitterY = (Math.random() - 0.5) * 8;
+                    box.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+
+                }, 70);
 
                 // Hide automatically after 5 seconds
                 setTimeout(() => {
                     active = false;
                     clearInterval(glitchInterval);
                     box.style.display = 'none';
+                    box.style.transform = 'translate(0, 0)';
                 }, 5000);
             }
         });
