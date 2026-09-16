@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Reactive Glitch Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent; /* Прозрачный фон для оверлея */
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .glitch-container {
+            position: relative;
+            font-size: 70px;
+            font-weight: bold;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            transition: transform 0.05s ease, filter 0.05s ease;
+        }
+
+        /* Стильный CSS-глитч */
+        .glitch {
+            position: relative;
+            display: inline-block;
+        }
+
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            clip: rect(0, 0, 0, 0);
+        }
+
+        .glitch::before {
+            left: 3px;
+            text-shadow: -2px 0 #ff0055;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+        }
+
+        .glitch::after {
+            left: -3px;
+            text-shadow: -2px 0 #00ffcc, 0 2px #00ffcc;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim2 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(10px, 9999px, 44px, 0); }
+            20% { clip: rect(80px, 9999px, 12px, 0); }
+            40% { clip: rect(30px, 9999px, 90px, 0); }
+            60% { clip: rect(70px, 9999px, 20px, 0); }
+            80% { clip: rect(5px, 9999px, 60px, 0); }
+            100% { clip: rect(50px, 9999px, 30px, 0); }
+        }
+
+        @keyframes glitch-anim2 {
+            0% { clip: rect(50px, 9999px, 10px, 0); }
+            20% { clip: rect(10px, 9999px, 80px, 0); }
+            40% { clip: rect(60px, 9999px, 30px, 0); }
+            60% { clip: rect(20px, 9999px, 70px, 0); }
+            80% { clip: rect(90px, 9999px, 15px, 0); }
+            100% { clip: rect(35px, 9999px, 95px, 0); }
+        }
+
+        /* Кнопка активации (браузеры требуют клик для доступа к микрофону) */
+        #start-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #ff0055;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-family: inherit;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            z-index: 9999;
+            box-shadow: 0 0 10px rgba(255,0,85,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Кнопка исчезнет после нажатия -->
+    <button id="start-btn">Включить аудио-реакцию</button>
+
+    <div class="glitch-container">
+        <!-- Текст, который будет глитчевать. Можете заменить на свой -->
+        <div class="glitch" id="glitch-text" data-text="STREAM VIBES">STREAM VIBES</div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const glitchText = document.getElementById('glitch-text');
+
+        startBtn.addEventListener('click', async () => {
+            startBtn.style.display = 'none';
+
+            try {
+                // Подключаемся к микрофону устройства (телефона или ПК)
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioCtx.createMediaStreamSource(stream);
+                const analyser = audioCtx.createAnalyser();
+                
+                analyser.fftSize = 256;
+                source.connect(analyser);
+
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                function updateGlitch() {
+                    requestAnimationFrame(updateGlitch);
+                    analyser.getByteFrequencyData(dataArray);
+
+                    // 1. Считаем НИЗКИЕ частоты (басы / удары) — индексы 0-10
+                    let lowSum = 0;
+                    for(let i = 0; i < 10; i++) {
+                        lowSum += dataArray[i];
+                    }
+                    let lowAvg = lowSum / 10; // от 0 до 255
+
+                    // 2. Считаем ВЫСОКИЕ частоты (голос / звон) — индексы 40-80
+                    let highSum = 0;
+                    for(let i = 40; i < 80; i++) {
+                        highSum += dataArray[i];
+                    }
+                    let highAvg = highSum / 40; // от 0 до 255
+
+                    // РЕАКЦИЯ НА НИЗКИЕ: Глитча (тряски и искажения) становится больше
+                    if (lowAvg > 25) {
+                        let shakeX = (Math.random() - 0.5) * (lowAvg / 2);
+                        let shakeY = (Math.random() - 0.5) * (lowAvg / 2);
+                        let skewVal = (Math.random() - 0.5) * (lowAvg / 3);
+                        glitchText.style.transform = `translate(${shakeX}px, ${shakeY}px) skew(${skewVal}deg)`;
+                    } else {
+                        glitchText.style.transform = `translate(0px, 0px) skew(0deg)`;
+                    }
+
+                    // РЕАКЦИЯ НА ВЫСОКИЕ: Меняется цвет (через фильтр оттенков hue-rotate)
+                    if (highAvg > 20) {
+                        let hue = (highAvg * 5) % 360;
+                        glitchText.style.filter = `hue-rotate(${hue}deg) drop-shadow(0 0 ${highAvg / 3}px #00ffcc)`;
+                    } else {
+                        glitchText.style.filter = `hue-rotate(0deg) drop-shadow(0 0 5px rgba(255,255,255,0.3))`;
+                    }
+                }
+
+                updateGlitch();
+
+            } catch (err) {
+                console.error('Ошибка доступа к аудио:', err);
+                alert('Не удалось получить доступ к звуку/микрофону.');
+            }
+        });
+    </script>
+</body>
+</html>
