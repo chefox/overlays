@@ -3,72 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VHS Audio Reactive Glitch Overlay</title>
+    <title>ZX Spectrum Localized Glitch Overlay</title>
     <style>
         * { box-sizing: border-box; }
         body, html {
             margin: 0;
             padding: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             background: transparent;
             overflow: hidden;
-            font-family: 'Courier New', Courier, monospace;
         }
-
-        /* Сканирующие линии VHS */
-        .scanlines {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 2;
-            background: linear-gradient(
-                rgba(18, 16, 16, 0) 50%, 
-                rgba(0, 0, 0, 0.3) 50%
-            );
-            background-size: 100% 4px;
-        }
-
-        /* Canvas для шума и глитча */
         canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
+            display: block;
             width: 100vw;
             height: 100vh;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* VHS интерфейс */
-        .vhs-ui {
-            position: fixed;
-            top: 25px;
-            left: 25px;
-            color: #00ff55;
-            font-size: 22px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px #000;
-            pointer-events: none;
-            z-index: 3;
-            letter-spacing: 2px;
-            opacity: 0.85;
+            background: transparent;
         }
     </style>
 </head>
 <body>
-
-    <div class="scanlines"></div>
-    <div class="vhs-ui">PLAY &#9654;<br><span id="vhs-time">00:00:00</span></div>
     <canvas id="glitch-canvas"></canvas>
 
     <script>
         const canvas = document.getElementById('glitch-canvas');
         const ctx = canvas.getContext('2d');
-        const vhsTime = document.getElementById('vhs-time');
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -77,89 +36,105 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Счетчик времени
-        setInterval(() => {
-            const now = new Date();
-            vhsTime.textContent = now.toTimeString().split(' ')[0];
-        }, 1000);
+        // 8-битные символы и артефакты ZX Spectrum
+        const chars = '░▒▓█▄▀■▌▐0123456789ABCDEF!@#$%^&*()_+-=/?><~';
 
-        // Автозапуск при загрузке страницы
-        window.addEventListener('load', async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Принудительная активация контекста, если браузер перевел его в suspended
-                if (audioCtx.state === 'suspended') {
-                    await audioCtx.resume();
-                }
+        // Оригинальная палитра ZX Spectrum (Paper / Ink)
+        const palette = [
+            '#000000', // Черный
+            '#0000D8', // Синий
+            '#D80000', // Красный
+            '#D800D8', // Пурпурный
+            '#00D800', // Зеленый
+            '#00D8D8', // Голубой
+            '#D8D800', // Желтый
+            '#FFFFFF', // Белый
+            '#00FFFF', // Яркий Голубой
+            '#FF00FF', // Яркий Пурпурный
+            '#FFFF00'  // Яркий Желтый
+        ];
 
-                const source = audioCtx.createMediaStreamSource(stream);
-                const analyser = audioCtx.createAnalyser();
-                
-                analyser.fftSize = 256;
-                source.connect(analyser);
+        const CELL_SIZE = 16; // Размер знакоместа (16x16 px)
+        let clusters = [];
 
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        // Создание одного случайного локального глитч-пятна
+        function createCluster() {
+            const cols = Math.floor(canvas.width / CELL_SIZE);
+            const rows = Math.floor(canvas.height / CELL_SIZE);
 
-                function draw() {
-                    requestAnimationFrame(draw);
-                    analyser.getByteFrequencyData(dataArray);
+            // Размеры кластера (от 2x1 до 6x4 знакомест)
+            const w = Math.floor(Math.random() * 5) + 2;
+            const h = Math.floor(Math.random() * 4) + 1;
 
-                    // Низкие частоты (басы / удары)
-                    let lowSum = 0;
-                    for (let i = 0; i < 10; i++) lowSum += dataArray[i];
-                    let lowAvg = lowSum / 10;
+            // Случайные координаты на сетке экрана
+            const startX = Math.floor(Math.random() * (cols - w));
+            const startY = Math.floor(Math.random() * (rows - h));
 
-                    // Высокие частоты (голос / звон)
-                    let highSum = 0;
-                    for (let i = 40; i < 80; i++) highSum += dataArray[i];
-                    let highAvg = highSum / 40;
+            // Время жизни кластера (очень короткая вспышка: 3–8 кадров)
+            const duration = Math.floor(Math.random() * 6) + 3;
 
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                    // Зернистость
-                    let noiseParticles = Math.floor(highAvg * 1.5) + 30;
-                    ctx.fillStyle = `rgba(255, 255, 255, ${0.03 + highAvg / 1200})`;
-                    for (let i = 0; i < noiseParticles; i++) {
-                        let x = Math.random() * canvas.width;
-                        let y = Math.random() * canvas.height;
-                        let w = Math.random() * 4 + 1;
-                        let h = Math.random() * 2 + 1;
-                        ctx.fillRect(x, y, w, h);
-                    }
-
-                    // Цветовые вспышки от высоких частот
-                    if (highAvg > 30) {
-                        ctx.fillStyle = `rgba(${highAvg * 2}, 0, 255, ${highAvg / 2000})`;
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    }
-
-                    // Полосы срыва трекинга от басов
-                    if (lowAvg > 25) {
-                        let numBars = Math.floor(lowAvg / 15);
-                        for (let i = 0; i < numBars; i++) {
-                            let barY = Math.random() * canvas.height;
-                            let barHeight = Math.random() * (lowAvg / 2) + 2;
-                            
-                            ctx.fillStyle = Math.random() > 0.5 
-                                ? `rgba(255, 0, 85, ${lowAvg / 400})` 
-                                : `rgba(0, 255, 220, ${lowAvg / 400})`;
-                            
-                            ctx.fillRect(0, barY, canvas.width, barHeight);
-
-                            ctx.fillStyle = `rgba(255, 255, 255, ${lowAvg / 250})`;
-                            ctx.fillRect(Math.random() * canvas.width, barY, Math.random() * 300 + 50, 1.5);
-                        }
-                    }
-                }
-
-                draw();
-
-            } catch (err) {
-                console.error("Ошибка автозапуска аудио:", err);
+            // Выбор цветов Paper / Ink для этого блока (Attribute Clash)
+            const paper = palette[Math.floor(Math.random() * palette.length)];
+            let ink = palette[Math.floor(Math.random() * palette.length)];
+            while (ink === paper) {
+                ink = palette[Math.floor(Math.random() * palette.length)];
             }
-        });
+
+            clusters.push({
+                x: startX,
+                y: startY,
+                w: w,
+                h: h,
+                paper: paper,
+                ink: ink,
+                duration: duration,
+                age: 0,
+                // Легкий горизонтальный сдвиг блока
+                offsetX: (Math.random() - 0.5) * 10
+            });
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Генерация новых пятен с ограничением максимального количества на экране
+            if (Math.random() < 0.4 && clusters.length < 4) {
+                createCluster();
+            }
+
+            ctx.font = 'bold 14px "Courier New", monospace';
+            ctx.textBaseline = 'top';
+
+            // Отрисовка всех активных глитч-пятен
+            for (let i = clusters.length - 1; i >= 0; i--) {
+                const c = clusters[i];
+
+                for (let r = 0; r < c.h; r++) {
+                    for (let col = 0; col < c.w; col++) {
+                        const posX = (c.x + col) * CELL_SIZE + c.offsetX;
+                        const posY = (c.y + r) * CELL_SIZE;
+
+                        // 1. Фон знакоместа (Paper)
+                        ctx.fillStyle = c.paper;
+                        ctx.fillRect(posX, posY, CELL_SIZE, CELL_SIZE);
+
+                        // 2. Быстро меняющийся символ (Ink)
+                        ctx.fillStyle = c.ink;
+                        const char = chars[Math.floor(Math.random() * chars.length)];
+                        ctx.fillText(char, posX + 2, posY + 1);
+                    }
+                }
+
+                c.age++;
+                if (c.age >= c.duration) {
+                    clusters.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        render();
     </script>
 </body>
 </html>
