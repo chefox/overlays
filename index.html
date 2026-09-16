@@ -16,7 +16,6 @@
             font-family: Arial, sans-serif;
         }
 
-        /* Base ambient glitch canvas (runs constantly in the background) */
         #ambient-glitch-canvas {
             position: absolute;
             top: 0;
@@ -27,7 +26,6 @@
             z-index: 1;
         }
 
-        /* Container for reaction modules (loaded via iframe) */
         .reaction-frame {
             position: absolute;
             top: 0;
@@ -51,7 +49,7 @@
     <iframe id="boom-frame" class="reaction-frame" src="reactions/boom.html"></iframe>
 
     <script>
-        // --- 1. AMBIENT BASE GLITCH ENGINE (Independent background layer) ---
+        // --- 1. AMBIENT BASE GLITCH ENGINE ---
         const canvas = document.getElementById('ambient-glitch-canvas');
         const ctx = canvas.getContext('2d');
 
@@ -75,18 +73,17 @@
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        // Glitch state machine: Pause (10-60s) -> Active Glitch Burst (2-5s)
         let isGlitching = false;
-        let nextStateTime = Date.now() + randomRange(3000, 6000); // Initial short delay
+        let nextStateTime = Date.now() + randomRange(3000, 6000);
 
         function updateGlitchState() {
             const now = Date.now();
             if (now >= nextStateTime) {
                 isGlitching = !isGlitching;
                 if (isGlitching) {
-                    nextStateTime = now + randomRange(2000, 5000); // Burst duration: 2 to 5 seconds
+                    nextStateTime = now + randomRange(2000, 5000);
                 } else {
-                    nextStateTime = now + randomRange(10000, 60000); // Pause duration: 10s to 1 minute
+                    nextStateTime = now + randomRange(10000, 60000);
                     clusters = [];
                 }
             }
@@ -126,7 +123,6 @@
                 for (let i = clusters.length - 1; i >= 0; i--) {
                     const c = clusters[i];
 
-                    // Draw ZX Spectrum blocks
                     for (let r = 0; r < c.h; r++) {
                         for (let col = 0; col < c.w; col++) {
                             const posX = (c.x + col) * CELL_SIZE + c.offsetX;
@@ -140,7 +136,6 @@
                         }
                     }
 
-                    // Draw flickering VHS lines alongside the glitch block
                     const clusterY = c.y * CELL_SIZE;
                     const clusterH = c.h * CELL_SIZE;
                     for (let l = 0; l < randomRange(2, 5); l++) {
@@ -163,14 +158,21 @@
         renderAmbientGlitch();
 
 
-        // --- 2. TWITCH CHAT LISTENER (Triggers reaction modules) ---
-        const channelName = 'technogumanitarij';
+        // --- 2. PARSE URL PARAMETERS ---
+        const urlParams = new URLSearchParams(window.location.search);
+        // Fallback to 'technogumanitarij' if parameters are missing in the URL
+        const channelName = urlParams.get('channel') || 'technogumanitarij';
+        const targetUser = urlParams.get('user') || channelName;
+
+
+        // --- 3. TWITCH CHAT LISTENER VIA WEBSOCKET ---
         const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
         ws.onopen = () => {
             ws.send('PASS SCHMOOPIE');
             ws.send('NICK justinfan12345');
             ws.send('JOIN #' + channelName.toLowerCase());
+            console.log(`Connected to channel: #${channelName}, listening to user: ${targetUser}`);
         };
 
         ws.onmessage = (event) => {
@@ -181,12 +183,20 @@
             }
 
             if (data.includes('PRIVMSG')) {
-                const parts = data.split(':');
-                const message = parts.slice(2).join(':').trim().toLowerCase();
+                const prefix = data.split(' ')[0];
+                let sender = '';
+                if (prefix.startsWith(':')) {
+                    sender = prefix.substring(1).split('!')[0].toLowerCase();
+                }
 
-                // Chat command router
-                if (message === '!boom') {
-                    triggerReaction('boom-frame', 5000);
+                const parts = data.split(':');
+                const message = parts.slice(2).join(':'.trim()).toLowerCase();
+
+                // Check if sender matches targetUser from URL parameters
+                if (sender === targetUser.toLowerCase()) {
+                    if (message === '!boom') {
+                        triggerReaction('boom-frame', 5000);
+                    }
                 }
             }
         };
