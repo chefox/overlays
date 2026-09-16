@@ -18,8 +18,8 @@
 
         .dance-box {
             position: relative;
-            padding: 30px 50px;
-            /* Solid dark background for high readability over any camera background */
+            /* Уменьшенные отступы вокруг текста (было 30px 50px) */
+            padding: 14px 28px;
             background: rgba(10, 10, 20, 0.9);
             color: #00ffcc;
             font-size: 52px;
@@ -56,7 +56,7 @@
                 glitchInterval = setInterval(() => {
                     if (!active) return;
 
-                    // 1. Text glitch: keep primary text mostly stable for readability, mix German text occasionally
+                    // 1. Text glitch mix
                     let output = "";
                     const maxLength = Math.max(primaryText.length, glitchText.length);
                     for (let i = 0; i < maxLength; i++) {
@@ -71,21 +71,21 @@
                     }
                     box.innerHTML = output;
 
-                    // 2. Border & Shape glitch (changing border-radius and outline dynamically)
-                    const rx1 = Math.floor(Math.random() * 20) + 2;
-                    const rx2 = Math.floor(Math.random() * 20) + 2;
-                    const rx3 = Math.floor(Math.random() * 20) + 2;
-                    const rx4 = Math.floor(Math.random() * 20) + 2;
+                    // 2. Border & Shape glitch
+                    const rx1 = Math.floor(Math.random() * 25) + 2;
+                    const rx2 = Math.floor(Math.random() * 25) + 2;
+                    const rx3 = Math.floor(Math.random() * 25) + 2;
+                    const rx4 = Math.floor(Math.random() * 25) + 2;
                     box.style.borderRadius = `${rx1}px ${rx2}px ${rx3}px ${rx4}px`;
 
                     const borderWidth = Math.random() > 0.4 ? '3px' : '6px';
                     const borderColor = Math.random() > 0.3 ? '#00ffcc' : '#ff0055';
                     box.style.border = `${borderWidth} solid ${borderColor}`;
-                    box.style.boxShadow = `0 0 ${Math.floor(Math.random() * 35) + 10}px ${borderColor}`;
+                    box.style.boxShadow = `0 0 ${Math.floor(Math.random() * 40) + 10}px ${borderColor}`;
 
-                    // Slight jitter position effect
-                    const jitterX = (Math.random() - 0.5) * 8;
-                    const jitterY = (Math.random() - 0.5) * 8;
+                    // Increased position jitter / dispersion range (было 8, стало 35/25 для резких скачков)
+                    const jitterX = (Math.random() - 0.5) * 35;
+                    const jitterY = (Math.random() - 0.5) * 25;
                     box.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
 
                 }, 70);
