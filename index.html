@@ -47,15 +47,12 @@
         let activeClusters = [];
         let isGlitching = false;
 
-        // --- УПРАВЛЕНИЕ ТАЙМЕРАМИ И ПАУЗАМИ ---
-
         function scheduleNextGlitch() {
             isGlitching = false;
             activeClusters = [];
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Пауза от 10 до 60 секунд (10000 - 60000 мс)
-            const pauseDuration = Math.floor(Math.random() * 50000) + 10000;
+            const pauseDuration = Math.floor(Math.random() * 20000) + 10000;
             setTimeout(startGlitchBurst, pauseDuration);
         }
 
@@ -63,19 +60,16 @@
             isGlitching = true;
             generateClusters();
 
-            // Длительность глитча от 1 до 5 секунд (1000 - 5000 мс)
             const burstDuration = Math.floor(Math.random() * 4000) + 1000;
             setTimeout(scheduleNextGlitch, burstDuration);
         }
 
-        // --- ГЕНЕРАЦИЯ ГЛИТЧ-ОБЛАСТЕЙ ---
 
         function generateClusters() {
             const cols = Math.floor(canvas.width / CELL_SIZE);
             const rows = Math.floor(canvas.height / CELL_SIZE);
             
-            // Создаем от 1 до 3 локальных пятен
-            const count = Math.floor(Math.random() * 3) + 1;
+            const count = Math.floor(Math.random() * 5) + 1;
             activeClusters = [];
 
             for (let i = 0; i < count; i++) {
@@ -101,26 +95,21 @@
             }
         }
 
-        // --- ОТРИСОВКА VHS-ПОЛОС НА ЛИНИИ ГЛИТЧА ---
-
         function drawVHSLines(cluster) {
             const startY = cluster.y * CELL_SIZE;
             const endY = (cluster.y + cluster.h) * CELL_SIZE;
             const clusterX = cluster.x * CELL_SIZE;
             const clusterW = cluster.w * CELL_SIZE;
 
-            // 3–6 мерцающих линий в пределах высоты глитч-блока
-            const numLines = Math.floor(Math.random() * 4) + 3;
+            const numLines = Math.floor(Math.random() * 8) + 3;
 
             for (let i = 0; i < numLines; i++) {
                 const lineY = startY + Math.random() * (endY - startY);
                 const lineHeight = Math.random() * 2 + 1;
                 
-                // Полосы сбиваются по длине (чуть шире самого глитч-блока)
                 const lineX = clusterX - Math.random() * 30;
                 const lineWidth = clusterW + Math.random() * 60;
 
-                // Цвета VHS-смещения (Cyan/Magenta/White)
                 const colors = [
                     'rgba(0, 255, 255, 0.8)',
                     'rgba(255, 0, 255, 0.8)',
@@ -129,7 +118,6 @@
                 ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
                 ctx.fillRect(lineX, lineY, lineWidth, lineHeight);
 
-                // Белые быстрые нити срыва трекинга
                 if (Math.random() > 0.5) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
                     ctx.fillRect(lineX - 20, lineY, lineWidth * 0.5, 1);
@@ -137,7 +125,6 @@
             }
         }
 
-        // --- ГЛАВНЫЙ ЦИКЛ РЕНДЕРА ---
 
         function render() {
             if (isGlitching) {
@@ -145,13 +132,11 @@
                 ctx.font = 'bold 14px "Courier New", monospace';
                 ctx.textBaseline = 'top';
 
-                // Периодически меняем положение блоков во время вспышки
                 if (Math.random() < 0.25) {
                     generateClusters();
                 }
 
                 activeClusters.forEach(c => {
-                    // 1.ZX Spectrum блоки
                     for (let r = 0; r < c.h; r++) {
                         for (let col = 0; col < c.w; col++) {
                             const posX = (c.x + col) * CELL_SIZE;
@@ -166,7 +151,6 @@
                         }
                     }
 
-                    // 2. Мерцающие VHS-полоски, привязанные к строке глитча
                     drawVHSLines(c);
                 });
             }
@@ -174,7 +158,7 @@
             requestAnimationFrame(render);
         }
 
-        // Запуск первого цикла с паузой при загрузке
+
         scheduleNextGlitch();
         render();
     </script>
