@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Boom Reaction Module</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .boom-box {
+            padding: 25px 40px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ffcc;
+            border-radius: 12px;
+            font-size: 36px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            border: 3px solid #00ffcc;
+            box-shadow: 0 0 30px #00ffcc;
+            animation: popIn 0.3s ease-out forwards, pulse 0.5s infinite alternate;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); box-shadow: 0 0 20px #00ffcc; }
+            to { transform: scale(1.05); box-shadow: 0 0 40px #ff0055; border-color: #ff0055; color: #ff0055; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="boom-box" id="content" style="display: none;">
+        ⚡ BOOM! ⚡
+    </div>
+
+    <script>
+        const content = document.getElementById('content');
+
+        // Listen for trigger signal from the main engine
+        window.addEventListener('message', (event) => {
+            if (event.data === 'play') {
+                content.style.display = 'block';
+
+                // Hide automatically after 5 seconds
+                setTimeout(() => {
+                    content.style.display = 'none';
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
