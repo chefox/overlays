@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dance Reaction Module</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dance-container {
+            position: relative;
+            font-size: 52px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            display: none;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dance-container" id="dance-box"></div>
+
+    <script>
+        const box = document.getElementById('dance-box');
+        let active = false;
+        let glitchInterval;
+
+        const primaryText = "LET'S DANCE";
+        const glitchText = "LASS UNS TANZEN";
+
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (data === 'play' || (data && data.action === 'play')) {
+                active = true;
+                box.style.display = 'block';
+
+                clearInterval(glitchInterval);
+                glitchInterval = setInterval(() => {
+                    if (!active) return;
+
+                    let output = "";
+                    const maxLength = Math.max(primaryText.length, glitchText.length);
+
+                    for (let i = 0; i < maxLength; i++) {
+                        const charP = primaryText[i] || '';
+                        const charG = glitchText[i] || '';
+
+                        // 75% chance to show readable primary text, 25% to glitch into German fragment
+                        if (Math.random() < 0.75) {
+                            output += `<span style="color: #00ffcc;">${charP}</span>`;
+                        } else {
+                            output += `<span style="color: #ff0055; text-shadow: 2px 0 #00ffff, -2px 0 #ff0055;">${charG}</span>`;
+                        }
+                    }
+                    box.innerHTML = output;
+                }, 60); // Speed of character flickering
+
+                // Hide automatically after 5 seconds
+                setTimeout(() => {
+                    active = false;
+                    clearInterval(glitchInterval);
+                    box.style.display = 'none';
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
