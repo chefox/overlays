@@ -11,12 +11,12 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background: transparent; /* Прозрачный фон — видео камеры будет полностью видно */
+            background: transparent;
             overflow: hidden;
             font-family: 'Courier New', Courier, monospace;
         }
 
-        /* Сканирующие линии кинескопа / VHS */
+        /* Сканирующие линии VHS */
         .scanlines {
             position: fixed;
             top: 0;
@@ -32,7 +32,7 @@
             background-size: 100% 4px;
         }
 
-        /* Холст для отрисовки динамических помех */
+        /* Canvas для шума и глитча */
         canvas {
             position: fixed;
             top: 0;
@@ -43,7 +43,7 @@
             z-index: 1;
         }
 
-        /* Винтажный надписи VHS в углу */
+        /* VHS интерфейс */
         .vhs-ui {
             position: fixed;
             top: 25px;
@@ -57,27 +57,10 @@
             letter-spacing: 2px;
             opacity: 0.85;
         }
-
-        #start-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            background: #ff0055;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-family: inherit;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 6px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
     </style>
 </head>
 <body>
 
-    <button id="start-btn">Включить VHS-помехи</button>
     <div class="scanlines"></div>
     <div class="vhs-ui">PLAY &#9654;<br><span id="vhs-time">00:00:00</span></div>
     <canvas id="glitch-canvas"></canvas>
@@ -85,7 +68,6 @@
     <script>
         const canvas = document.getElementById('glitch-canvas');
         const ctx = canvas.getContext('2d');
-        const startBtn = document.getElementById('start-btn');
         const vhsTime = document.getElementById('vhs-time');
 
         function resize() {
@@ -95,18 +77,23 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Имитация счетчика времени VHS
+        // Счетчик времени
         setInterval(() => {
             const now = new Date();
             vhsTime.textContent = now.toTimeString().split(' ')[0];
         }, 1000);
 
-        startBtn.addEventListener('click', async () => {
-            startBtn.style.display = 'none';
-
+        // Автозапуск при загрузке страницы
+        window.addEventListener('load', async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Принудительная активация контекста, если браузер перевел его в suspended
+                if (audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
+
                 const source = audioCtx.createMediaStreamSource(stream);
                 const analyser = audioCtx.createAnalyser();
                 
@@ -119,7 +106,7 @@
                     requestAnimationFrame(draw);
                     analyser.getByteFrequencyData(dataArray);
 
-                    // Низкие частоты (басы / ударные)
+                    // Низкие частоты (басы / удары)
                     let lowSum = 0;
                     for (let i = 0; i < 10; i++) lowSum += dataArray[i];
                     let lowAvg = lowSum / 10;
@@ -131,7 +118,7 @@
 
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                    // 1. Постоянная зернистость / легкий цифровой шум
+                    // Зернистость
                     let noiseParticles = Math.floor(highAvg * 1.5) + 30;
                     ctx.fillStyle = `rgba(255, 255, 255, ${0.03 + highAvg / 1200})`;
                     for (let i = 0; i < noiseParticles; i++) {
@@ -142,27 +129,25 @@
                         ctx.fillRect(x, y, w, h);
                     }
 
-                    // 2. ВЫСОКИЕ ЧАСТОТЫ: Цветовые вспышки (RGB-distortion)
+                    // Цветовые вспышки от высоких частот
                     if (highAvg > 30) {
                         ctx.fillStyle = `rgba(${highAvg * 2}, 0, 255, ${highAvg / 2000})`;
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                     }
 
-                    // 3. НИЗКИЕ ЧАСТОТЫ (БАС): Полосы срыва трекинга (VHS Tracking Errors)
+                    // Полосы срыва трекинга от басов
                     if (lowAvg > 25) {
                         let numBars = Math.floor(lowAvg / 15);
                         for (let i = 0; i < numBars; i++) {
                             let barY = Math.random() * canvas.height;
                             let barHeight = Math.random() * (lowAvg / 2) + 2;
                             
-                            // Смещение и полосы искажения
                             ctx.fillStyle = Math.random() > 0.5 
                                 ? `rgba(255, 0, 85, ${lowAvg / 400})` 
                                 : `rgba(0, 255, 220, ${lowAvg / 400})`;
                             
                             ctx.fillRect(0, barY, canvas.width, barHeight);
 
-                            // Белые горизонтальные нити помех
                             ctx.fillStyle = `rgba(255, 255, 255, ${lowAvg / 250})`;
                             ctx.fillRect(Math.random() * canvas.width, barY, Math.random() * 300 + 50, 1.5);
                         }
@@ -172,8 +157,7 @@
                 draw();
 
             } catch (err) {
-                console.error("Ошибка микрофона:", err);
-                alert("Запрос микрофона отклонен или недоступен.");
+                console.error("Ошибка автозапуска аудио:", err);
             }
         });
     </script>
