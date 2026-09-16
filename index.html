@@ -50,7 +50,7 @@
     <!-- Reaction modules -->
     <iframe id="boom-frame" class="reaction-frame" src="reactions/boom.html"></iframe>
     <iframe id="dance-frame" class="reaction-frame" src="reactions/dance.html"></iframe>
-    <iframe id="question-frame" class="reaction-frame" src="reactions/dance_question.html"></iframe>
+    <iframe id="question-frame" class="reaction-frame" src="reactions/question.html"></iframe>
 
     <script>
         // --- 1. AMBIENT BASE GLITCH ENGINE ---
@@ -194,7 +194,7 @@
                 const parts = data.split(':');
                 const message = parts.slice(2).join(':').trim().toLowerCase();
 
-                // Check if the sender is you (targetUser) or someone else
+                // Check command logic
                 if (sender === targetUser.toLowerCase()) {
                     // Owner commands
                     if (message === '!boom') {
@@ -203,8 +203,12 @@
                         triggerReaction('dance-frame', 5000);
                     }
                 } else {
-                    // Viewer commands (triggers question reaction with their username)
-                    if (message === '!boom' || message === '!dance') {
+                    // Viewer commands
+                    if (message === '!dance') {
+                        // Viewer request for dance behaves identically to lets dance
+                        triggerReaction('dance-frame', 5000);
+                    } else if (message === '!boom') {
+                        // Other commands trigger question box with viewer username
                         triggerViewerReaction('question-frame', 5000, sender, message);
                     }
                 }
