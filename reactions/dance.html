@@ -18,8 +18,8 @@
 
         .dance-box {
             position: relative;
-            /* Уменьшенные отступы вокруг текста (было 30px 50px) */
-            padding: 14px 28px;
+            /* Увеличенные отступы, чтобы рамка была больше */
+            padding: 26px 52px;
             background: rgba(10, 10, 20, 0.9);
             color: #00ffcc;
             font-size: 52px;
@@ -29,7 +29,8 @@
             letter-spacing: 6px;
             display: none;
             text-align: center;
-            border: 3px solid #00ffcc;
+            border: 4px solid #00ffcc;
+            border-radius: 0; /* Строго без закруглений */
             box-shadow: 0 0 30px rgba(0, 255, 204, 0.5);
         }
     </style>
@@ -71,19 +72,14 @@
                     }
                     box.innerHTML = output;
 
-                    // 2. Border & Shape glitch
-                    const rx1 = Math.floor(Math.random() * 25) + 2;
-                    const rx2 = Math.floor(Math.random() * 25) + 2;
-                    const rx3 = Math.floor(Math.random() * 25) + 2;
-                    const rx4 = Math.floor(Math.random() * 25) + 2;
-                    box.style.borderRadius = `${rx1}px ${rx2}px ${rx3}px ${rx4}px`;
-
-                    const borderWidth = Math.random() > 0.4 ? '3px' : '6px';
+                    // 2. Border glitch (without rounded corners)
+                    const borderWidth = Math.random() > 0.4 ? '4px' : '8px';
                     const borderColor = Math.random() > 0.3 ? '#00ffcc' : '#ff0055';
                     box.style.border = `${borderWidth} solid ${borderColor}`;
+                    box.style.borderRadius = '0';
                     box.style.boxShadow = `0 0 ${Math.floor(Math.random() * 40) + 10}px ${borderColor}`;
 
-                    // Increased position jitter / dispersion range (было 8, стало 35/25 для резких скачков)
+                    // Large jitter/dispersion range for aggressive shaking
                     const jitterX = (Math.random() - 0.5) * 35;
                     const jitterY = (Math.random() - 0.5) * 25;
                     box.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
