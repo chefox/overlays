@@ -16,6 +16,7 @@
             font-family: Arial, sans-serif;
         }
 
+        /* Ambient background glitch layer */
         #ambient-glitch-canvas {
             position: absolute;
             top: 0;
@@ -26,6 +27,7 @@
             z-index: 1;
         }
 
+        /* Reaction iframes */
         .reaction-frame {
             position: absolute;
             top: 0;
@@ -47,6 +49,8 @@
 
     <!-- Reaction modules -->
     <iframe id="boom-frame" class="reaction-frame" src="reactions/boom.html"></iframe>
+    <iframe id="dance-frame" class="reaction-frame" src="reactions/dance.html"></iframe>
+    <iframe id="question-frame" class="reaction-frame" src="reactions/dance_question.html"></iframe>
 
     <script>
         // --- 1. AMBIENT BASE GLITCH ENGINE ---
@@ -160,19 +164,17 @@
 
         // --- 2. PARSE URL PARAMETERS ---
         const urlParams = new URLSearchParams(window.location.search);
-        // Fallback to 'technogumanitarij' if parameters are missing in the URL
         const channelName = urlParams.get('channel') || 'technogumanitarij';
         const targetUser = urlParams.get('user') || channelName;
 
 
-        // --- 3. TWITCH CHAT LISTENER VIA WEBSOCKET ---
+        // --- 3. TWITCH CHAT LISTENER ---
         const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
         ws.onopen = () => {
             ws.send('PASS SCHMOOPIE');
             ws.send('NICK justinfan12345');
             ws.send('JOIN #' + channelName.toLowerCase());
-            console.log(`Connected to channel: #${channelName}, listening to user: ${targetUser}`);
         };
 
         ws.onmessage = (event) => {
@@ -190,12 +192,20 @@
                 }
 
                 const parts = data.split(':');
-                const message = parts.slice(2).join(':'.trim()).toLowerCase();
+                const message = parts.slice(2).join(':').trim().toLowerCase();
 
-                // Check if sender matches targetUser from URL parameters
+                // Check if the sender is you (targetUser) or someone else
                 if (sender === targetUser.toLowerCase()) {
+                    // Owner commands
                     if (message === '!boom') {
                         triggerReaction('boom-frame', 5000);
+                    } else if (message === '!dance') {
+                        triggerReaction('dance-frame', 5000);
+                    }
+                } else {
+                    // Viewer commands (triggers question reaction with their username)
+                    if (message === '!boom' || message === '!dance') {
+                        triggerViewerReaction('question-frame', 5000, sender, message);
                     }
                 }
             }
@@ -205,6 +215,16 @@
             const frame = document.getElementById(frameId);
             frame.style.display = 'block';
             frame.contentWindow.postMessage('play', '*');
+
+            setTimeout(() => {
+                frame.style.display = 'none';
+            }, duration);
+        }
+
+        function triggerViewerReaction(frameId, duration, username, command) {
+            const frame = document.getElementById(frameId);
+            frame.style.display = 'block';
+            frame.contentWindow.postMessage({ action: 'play', username: username, command: command }, '*');
 
             setTimeout(() => {
                 frame.style.display = 'none';
