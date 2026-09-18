@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Overlay Engine</title>
+    <style>
+        * { box-sizing: border-box; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #0a0a1a;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Retrowave frame */
+        .retrowave-frame {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Animated neon edges */
+        .retrowave-frame .edge {
+            position: absolute;
+            animation: neonPulse 3s ease-in-out infinite alternate;
+        }
+        .retrowave-frame .edge-top {
+            top: 0; left: 0; width: 100%; height: 20px;
+            background: linear-gradient(180deg, #00ffff, transparent);
+            box-shadow: 0 0 20px #00ffff, 0 0 40px rgba(0,255,255,0.6), 0 0 80px rgba(0,255,255,0.3);
+            color: #00ffff;
+        }
+        .retrowave-frame .edge-bottom {
+            bottom: 0; left: 0; width: 100%; height: 20px;
+            background: linear-gradient(0deg, #00ffff, transparent);
+            box-shadow: 0 0 20px #00ffff, 0 0 40px rgba(0,255,255,0.6), 0 0 80px rgba(0,255,255,0.3);
+            color: #00ffff;
+            animation-delay: 1s;
+        }
+        .retrowave-frame .edge-left {
+            top: 0; left: 0; width: 20px; height: 100%;
+            background: linear-gradient(0deg, #ff00ff, transparent);
+            box-shadow: 0 0 20px #ff00ff, 0 0 40px rgba(255,0,255,0.6), 0 0 80px rgba(255,0,255,0.3);
+            color: #ff00ff;
+            animation-delay: 1.5s;
+        }
+        .retrowave-frame .edge-right {
+            top: 0; right: 0; width: 20px; height: 100%;
+            background: linear-gradient(0deg, #ff00ff, transparent);
+            box-shadow: 0 0 20px #ff00ff, 0 0 40px rgba(255,0,255,0.6), 0 0 80px rgba(255,0,255,0.3);
+            color: #ff00ff;
+            animation-delay: 2s;
+        }
+
+        /* Animated corners */
+        .retrowave-frame .corner {
+            position: absolute;
+            width: 20px; height: 20px;
+            animation: cornerFlicker 2s ease-in-out infinite alternate;
+        }
+        .retrowave-frame .corner-tl { top: -4px; left: -4px; border-top: 4px solid #00ffff; border-left: 4px solid #00ffff; animation-delay: 0s; }
+        .retrowave-frame .corner-tr { top: -4px; right: -4px; border-top: 4px solid #ff00ff; border-right: 4px solid #ff00ff; animation-delay: 0.5s; }
+        .retrowave-frame .corner-bl { bottom: -4px; left: -4px; border-bottom: 4px solid #ff00ff; border-left: 4px solid #ff00ff; animation-delay: 1s; }
+        .retrowave-frame .corner-br { bottom: -4px; right: -4px; border-bottom: 4px solid #00ffff; border-right: 4px solid #00ffff; animation-delay: 1.5s; }
+
+        /* Animated scanlines */
+        .retrowave-frame .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.15) 2px,
+                rgba(0,0,0,0.15) 4px
+            );
+            pointer-events: none;
+            animation: scanlineScroll 8s linear infinite;
+        }
+
+        /* Animated sunset grid */
+        .retrowave-frame .grid {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 50%;
+            background: 
+                linear-gradient(to top, rgba(0,0,0,0.8), transparent),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 29px,
+                    rgba(0,255,255,0.03) 29px,
+                    rgba(0,255,255,0.03) 30px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 29px,
+                    rgba(0,255,255,0.03) 29px,
+                    rgba(0,255,255,0.03) 30px
+                );
+            background-size: 100% 100%, 60px 60px, 60px 60px;
+            pointer-events: none;
+            animation: gridShift 10s linear infinite;
+        }
+
+        /* Keyframes */
+        @keyframes neonPulse {
+            0% {
+                opacity: 0.6;
+                filter: brightness(0.8) drop-shadow(0 0 5px currentColor);
+            }
+            50% {
+                opacity: 1;
+                filter: brightness(1.4) drop-shadow(0 0 20px currentColor);
+            }
+            100% {
+                opacity: 0.6;
+                filter: brightness(0.8) drop-shadow(0 0 5px currentColor);
+            }
+        }
+
+        @keyframes cornerFlicker {
+            0% { opacity: 0.4; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0.4; transform: scale(0.9); }
+        }
+
+        @keyframes scanlineScroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100px; }
+        }
+
+        @keyframes gridShift {
+            0% { background-position: 0 0, 0 0, 0 0; }
+            100% { background-position: 0 0, 0 60px, 0 60px; }
+        }
+
+        /* Reaction iframes */
+        .reaction-frame {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            border: none;
+            pointer-events: none;
+            background: transparent;
+            display: none;
+            z-index: 3;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Retrowave frame -->
+    <div class="retrowave-frame">
+        <div class="edge edge-top"></div>
+        <div class="edge edge-bottom"></div>
+        <div class="edge edge-left"></div>
+        <div class="edge edge-right"></div>
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+        <div class="scanlines"></div>
+        <div class="grid"></div>
+    </div>
+
+    <!-- Reaction modules -->
+    <iframe id="boom-frame" class="reaction-frame" src="reactions/boom.html"></iframe>
+    <iframe id="dance-frame" class="reaction-frame" src="reactions/dance.html"></iframe>
+    <iframe id="question-frame" class="reaction-frame" src="reactions/question.html"></iframe>
+
+    <script>
+        // --- 1. PARSE URL PARAMETERS ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const channelName = urlParams.get('channel') || 'technogumanitarij';
+        const targetUser = urlParams.get('user') || channelName;
+
+
+        // --- 2. TWITCH CHAT LISTENER ---
+        const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+        ws.onopen = () => {
+            ws.send('PASS SCHMOOPIE');
+            ws.send('NICK justinfan12345');
+            ws.send('JOIN #' + channelName.toLowerCase());
+        };
+
+        ws.onmessage = (event) => {
+            const data = event.data;
+            if (data.startsWith('PING')) {
+                ws.send('PONG ' + data.split(' ')[1]);
+                return;
+            }
+
+            if (data.includes('PRIVMSG')) {
+                const prefix = data.split(' ')[0];
+                let sender = '';
+                if (prefix.startsWith(':')) {
+                    sender = prefix.substring(1).split('!')[0].toLowerCase();
+                }
+
+                const parts = data.split(':');
+                const message = parts.slice(2).join(':').trim().toLowerCase();
+
+                // Check command logic
+                if (sender === targetUser.toLowerCase()) {
+                    // Owner commands
+                    if (message === '!boom') {
+                        triggerReaction('boom-frame', 5000);
+                    } else if (message === '!dance') {
+                        triggerReaction('dance-frame', 5000);
+                    }
+                } else {
+                    // Viewer commands
+                    if (message === '!dance') {
+                        triggerReaction('dance-frame', 5000);
+                    } else if (message === '!boom') {
+                        triggerViewerReaction('question-frame', 5000, sender, message);
+                    }
+                }
+            }
+        };
+
+        function triggerReaction(frameId, duration) {
+            const frame = document.getElementById(frameId);
+            frame.style.display = 'block';
+            frame.contentWindow.postMessage('play', '*');
+
+            setTimeout(() => {
+                frame.style.display = 'none';
+            }, duration);
+        }
+
+        function triggerViewerReaction(frameId, duration, username, command) {
+            const frame = document.getElementById(frameId);
+            frame.style.display = 'block';
+            frame.contentWindow.postMessage({ action: 'play', username: username, command: command }, '*');
+
+            setTimeout(() => {
+                frame.style.display = 'none';
+            }, duration);
+        }
+
+        ws.onclose = () => {
+            setTimeout(() => location.reload(), 5000);
+        };
+    </script>
+</body>
+</html>
